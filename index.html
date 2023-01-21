@@ -1,0 +1,319 @@
+<!-- Author Salam Hani -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BESS</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+</head>
+
+<body>
+    <div class="testbox">
+        <form>
+            <div class="myDiv">
+                <img class="myDiv1" title="Client Logo"
+                        src="https://www.logotypes101.com/logos/982/098617AA545B2DC9E7BDD058AE28983F/volvo_cars.png" />
+
+            </div>
+            <br />
+                <center class="headlines">Chalmers University of Technology Hållbar
+                    Utveckling och Etik in cooperation with AB Volvo
+                    Energy calculation of BESS profit.</center>
+            <br />
+            
+                <div class="colums">
+                    <div class="item">
+                        <label for="Capacity">
+                            <center class="headlines">Battery Capacity</center>
+                        </label>
+                        <input id="Capacity" type="range" name="Capacity"  min="0.5" max="9.6" step="0.5" />
+                        <center>
+                            <p><span id="capacityvalue"></span> MWh</p>
+                        </center>
+                    </div>
+                    <div class="item">
+                        <label for="BufferSize">
+                            <center class="headlines">Buffer Size</center>
+                        </label>
+                        <input id="BufferSize" type="range" name="BufferSize"  min="0" value="0.2" max="1" step="0.1" />
+                        <center>
+                            <p><span id="buffersizevalue"></span> %</p>
+                        </center>
+                    </div>
+                    <div class="item">
+                        <label for="MaxCharge">
+                            <center class="headlines">Maximum Charge</center>
+                        </label>
+                        <input id="MaxCharge" value="0.8" type="range" name="MaxCharge"   min="0" max="1"
+                            step="0.1" />
+                        <center>
+                            <p><span id="maxchargevalue"></span> %</p>
+                        </center>
+                    </div>
+                    <div class="item">
+                        <label for="MinCharge">
+                            <center class="headlines">Minimum Charge</center>
+                        </label>
+                        <input id="MinCharge" value="0.2" type="range" name="MinCharge"   min="0" max="1"
+                            step="0.1" />
+                        <center>
+                            <p><span id="minchargevalue"></span> %</p>
+                        </center>
+                    </div>
+                    <div class="item">
+                        <label for="dod">
+                            <center class="headlines">Depth of Discharge</center>
+                        </label>
+                        <input id="dod" type="range" name="dod"   min="0" max="1" step="0.1" />
+                        <center>
+                            <p><span id="dodvalue"></span> %</p>
+                        </center>
+                    </div>
+                    <div class="item">
+                        <label for="Power">
+                            <center class="headlines">Power</center>
+                        </label>
+                        <input id="Power" type="range" name="Power" min="0.5" max="4.5" step="0.5"  />
+                        <center>
+                            <p><span id="powervalue"></span> MW</p>
+                        </center>
+                    </div>
+                </div>
+                <br />
+                <div class="btn-block">
+                    <button type="submit" class="button" py-click="write_to_page()" id="submit">Calculate</button>
+                </div>
+                <br />
+                <div class="middlebox"><center><p class="headlines" id="results">RESULTS</p></center></div>
+                <br />
+                <div class=colums>
+                    <div class="item"><p class="headlines">Total Accumulated FCRD Profit This Year =  <span class="profit" id="profit"></span> EUR</p></div>
+                    <div class="item"><p class="headlines">Total Potential Peak-Shaving Profit =  <span id="peak_shaving"></span> EUR</p></div>
+                </div>
+                <br />
+                <div class=colums>
+                    <div><center id="matplotlib-lineplot"></center></div>
+                    <div><center id="matplotlib-lineplot1"></center></div>
+                </div>
+                <br />
+                <div class=colums>
+                    <div><center id="matplotlib-lineplot2"></center></div>
+                    <div><center id="matplotlib-lineplot3"></center></div>
+                </div>
+                <div id="nordpool">
+                    <center>
+                        <p>Day-ahead prices supplied by Nordpool</p>
+                    </center>
+                </div>
+            </form>
+            
+            <script>
+                var getJSON = function(url, callback) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.responseType = 'json';
+                    xhr.onload = function() {
+                        var status = xhr.status;
+                
+                        if (status == 200) {
+                            callback(null, xhr.response);
+                        } else {
+                            callback(status);
+                        }
+                    };
+                    xhr.send();
+                };
+                
+                $("form").submit(function(event) {
+                    event.preventDefault();
+                
+                    var Capacity = $("#Capacity").val();
+                    var BufferSize = $("#BufferSize").val();
+                    var MaxCharge = $("#MaxCharge").val();
+                    var MinCharge = $("#MinCharge").val();
+                    var dod = $("#dod").val();
+                    var Power = $("#Power").val();
+                
+                    var url = 'http://127.0.0.1:5000/calculate?Capacity=' + Capacity + '&BufferSize=' + BufferSize + '&MaxCharge=' + MaxCharge + '&MinCharge=' + MinCharge + '&dod=' + dod + '&Power=' + Power;
+                    
+                    $.getJSON(url, function(data) {
+                        document.getElementById("profit").innerHTML = data.value;
+                        FCRD_array = data.FCRD_array;
+                        FCRD_array_json = JSON.stringify(FCRD_array);
+                        peak_savings = data.Peak_savings;
+                        peak_shaving_array_old = data.Old_usage;
+                        peak_shaving_array_old_json = JSON.stringify(peak_shaving_array_old);
+                        peak_shaving_array_new = data.New_usage;
+                        peak_shaving_array_new_json = JSON.stringify(peak_shaving_array_new);
+
+                    });
+                });
+            </script>
+            <script>
+                var slider = document.getElementById("Capacity");
+                var output = document.getElementById("capacityvalue");
+                output.innerHTML = slider.value;
+                slider.oninput = function () {
+                    output.innerHTML = this.value;
+                };
+
+                var slider1 = document.getElementById("BufferSize");
+                var output1 = document.getElementById("buffersizevalue");
+                output1.innerHTML = slider1.value * 100;
+                slider1.oninput = function () {
+                    output1.innerHTML = this.value * 100;
+                };
+
+                var slider2 = document.getElementById("MaxCharge");
+                var output2 = document.getElementById("maxchargevalue");
+                output2.innerHTML = slider2.value * 100;
+                slider2.oninput = function () {
+                    output2.innerHTML = this.value * 100;
+                };
+
+                var slider3 = document.getElementById("MinCharge");
+                var output3 = document.getElementById("minchargevalue");
+                output3.innerHTML = slider3.value * 100;
+                slider3.oninput = function () {
+                    output3.innerHTML = this.value * 100;
+                };
+
+                var slider4 = document.getElementById("dod");
+                var output4 = document.getElementById("dodvalue");
+                output4.innerHTML = slider4.value * 100;
+                slider4.oninput = function () {
+                    output4.innerHTML = this.value * 100;
+                };
+
+                var slider5 = document.getElementById("Power");
+                var output5 = document.getElementById("powervalue");
+                output5.innerHTML = slider5.value;
+                slider5.oninput = function () {
+                    output5.innerHTML = this.value;
+                };
+            </script>
+
+            <py-config>
+                packages = ["matplotlib", "numpy"]
+            </py-config>
+
+            
+            <py-script>
+            import matplotlib.pyplot as plt
+            import numpy as np
+            from js import console
+
+            async def write_to_page(*args, **kwargs):
+                import asyncio
+                import json
+                await asyncio.sleep(2)
+
+                from js import FCRD_array_json, peak_shaving_array_old_json, peak_shaving_array_new_json, peak_savings
+                result = json.loads(FCRD_array_json)
+                result2 = json.loads(peak_shaving_array_old_json)
+                result3 = json.loads(peak_shaving_array_new_json)
+                array = [0]*(365 - len(result))
+                
+                result = result + array
+                #result2 = result2 + array
+
+                Accumulated_profit_FCR = round(sum(result))
+                
+
+                profit = Element("profit")
+                profit.element.innerText = Accumulated_profit_FCR
+                
+
+                peak_shaving = Element("peak_shaving")
+                peak_shaving.element.innerText = peak_savings
+
+                #test arrays.  Change test_profit_array to FCRD_array and test_profit_array1 to peak_shaving_array to get working code
+                test_profit_array = np.arange(0, 365, 1)
+                test_profit_array1 = np.arange(0,730,2)
+
+                #Fcr-plot
+                fig, ax = plt.subplots()
+                fig.set_size_inches(8, 6, forward=True)
+                months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov','Dec']
+                profits_fcr = result
+                t = np.arange(1/len(result), 12 ,12/len(result))    
+                ax.set_xticks(np.arange(0, 12, 1))
+                ax.set_xticklabels(months)
+                
+                plt.plot(t, result, marker='o', linestyle='-', color='g', label='FCRD Profits', linewidth = 1, markersize=0)
+                plt.xlabel('Months')
+                plt.ylabel('Profits (EUR)')
+                plt.title('FCRD Profits')
+                plt.legend(loc='lower right')
+                fig
+                Element('matplotlib-lineplot').write(fig)
+
+                #peakshaving plot-------------------------------------------------------------------------------
+                fig, ax = plt.subplots()
+                fig.set_size_inches(8, 6, forward=True)
+                # months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov','Dec']
+                days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                old_usage = [x for l in result2 for x in l]
+                new_usage = [x for l in result3 for x in l]
+                ax.set_xticks(np.arange(0, 7, 1))
+                ax.set_xticklabels(days)
+
+                num_points = np.arange(0,7,1/24)
+
+                plt.plot(num_points, old_usage, marker='o', linestyle='-', color='r', label='Usage', linewidth = 1, markersize=0)
+                plt.plot(num_points, new_usage, marker='o', linestyle='-', color='b', label='Usage with BESS', linewidth = 1, markersize=0)
+                plt.xlabel('Day')
+                plt.ylabel('Consumption (MWh)')
+                plt.title('Peak reductions (week)')
+                plt.legend(loc='lower right')
+                fig
+                Element('matplotlib-lineplot1').write(fig)
+
+                # For a days
+                old_day = result2[1]
+                new_day = result3[1]
+
+                #peakshaving & fcr
+                fig, ax = plt.subplots()
+                fig.set_size_inches(8, 6, forward=True)
+                hours = np.arange(0,24,1)
+
+                plt.plot(hours, old_day, marker='o', linestyle='-', color='r', label='Usage', linewidth = 1, markersize=0)
+                plt.plot(hours, new_day, marker='o', linestyle='-', color='b', label='Usage with BESS', linewidth = 1, markersize=0)
+                plt.xlabel('Hour')
+                plt.ylabel('Consumption (MWh)')
+                plt.title('Peak reductions (day)')
+                plt.legend(loc='lower right')
+                fig
+                Element('matplotlib-lineplot3').write(fig)
+
+                #fcr for a month------------------------------------------------------------------------------
+                fig, ax = plt.subplots()
+                fig.set_size_inches(8, 6, forward=True)
+
+                profit_may_fcr = [0] * 31
+                profit_may_peak = [0] * 31
+
+                for i in range (0,31):
+                    profit_may_fcr[i]=result[120+i]
+                    
+                days = np.arange(1, 32 ,1)                   
+                plt.plot(days, profit_may_fcr, marker='o', linestyle='-', color='g', label='FCRD Profits', linewidth = 1, markersize=0)
+                ax.set_ylim(0)
+                plt.xlabel('Day (May)')
+                plt.ylabel('Profits (EUR)')
+                plt.title('FCRD Profits')
+                plt.legend(loc='lower right')
+                fig
+                Element('matplotlib-lineplot2').write(fig)
+                return fig          
+            </py-script>
+</body>
+</html>
